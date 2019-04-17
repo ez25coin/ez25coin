@@ -1,0 +1,33 @@
+# /etc/conf.d/ez25coind: config file for /etc/init.d/ez25coind
+
+# Config file location
+#EZ25COIND_CONFIGFILE="/etc/ez25coin/ez25coin.conf"
+
+# What directory to write pidfile to?  (created and owned by $EZ25COIND_USER)
+#EZ25COIND_PIDDIR="/var/run/ez25coind"
+
+# What filename to give the pidfile
+#EZ25COIND_PIDFILE="${EZ25COIND_PIDDIR}/ez25coind.pid"
+
+# Where to write ez25coind data (be mindful that the blockchain is large)
+#EZ25COIND_DATADIR="/var/lib/ez25coind"
+
+# User and group to own ez25coind process
+#EZ25COIND_USER="ez25coin"
+#EZ25COIND_GROUP="ez25coin"
+
+# Path to ez25coind executable
+#EZ25COIND_BIN="/usr/bin/ez25coind"
+
+# Nice value to run ez25coind under
+#EZ25COIND_NICE=0
+
+# Additional options (avoid -conf and -datadir, use flags above)
+#EZ25COIND_OPTS=""
+
+# The timeout in seconds OpenRC will wait for ez25coind to terminate
+# after a SIGTERM has been raised.
+# Note that this will be mapped as argument to start-stop-daemon's
+# '--retry' option, which means you can specify a retry schedule
+# here. For more information see man 8 start-stop-daemon.
+EZ25COIND_SIGTERM_TIMEOUT=60

@@ -1,0 +1,82 @@
+# Copyright (c) 2015-2016 The Bitcoin Core developers
+# Distributed under the MIT software license, see the accompanying
+# file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
+bin_PROGRAMS += bench/bench_ez25coin
+BENCH_SRCDIR = bench
+BENCH_BINARY = bench/bench_ez25coin$(EXEEXT)
+
+RAW_BENCH_FILES = \
+  bench/data/block413567.raw
+GENERATED_BENCH_FILES = $(RAW_BENCH_FILES:.raw=.raw.h)
+
+bench_bench_ez25coin_SOURCES = \
+  $(RAW_BENCH_FILES) \
+  bench/bench_ez25coin.cpp \
+  bench/bench.cpp \
+  bench/bench.h \
+  bench/block_assemble.cpp \
+  bench/checkblock.cpp \
+  bench/checkqueue.cpp \
+  bench/examples.cpp \
+  bench/rollingbloom.cpp \
+  bench/crypto_hash.cpp \
+  bench/ccoins_caching.cpp \
+  bench/merkle_root.cpp \
+  bench/mempool_eviction.cpp \
+  bench/verify_script.cpp \
+  bench/base58.cpp \
+  bench/bech32.cpp \
+  bench/lockedpool.cpp \
+  bench/prevector.cpp
+
+nodist_bench_bench_ez25coin_SOURCES = $(GENERATED_BENCH_FILES)
+
+bench_bench_ez25coin_CPPFLAGS = $(AM_CPPFLAGS) $(EZ25COIN_INCLUDES) $(EVENT_CLFAGS) $(EVENT_PTHREADS_CFLAGS) -I$(builddir)/bench/
+bench_bench_ez25coin_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
+bench_bench_ez25coin_LDADD = \
+  $(LIBEZ25COIN_WALLET) \
+  $(LIBEZ25COIN_SERVER) \
+  $(LIBEZ25COIN_COMMON) \
+  $(LIBEZ25COIN_UTIL) \
+  $(LIBEZ25COIN_CONSENSUS) \
+  $(LIBEZ25COIN_CRYPTO) \
+  $(LIBLEVELDB) \
+  $(LIBLEVELDB_SSE42) \
+  $(LIBMEMENV) \
+  $(LIBSECP256K1) \
+  $(LIBUNIVALUE)
+
+if ENABLE_ZMQ
+bench_bench_ez25coin_LDADD += $(LIBEZ25COIN_ZMQ) $(ZMQ_LIBS)
+endif
+
+if ENABLE_WALLET
+bench_bench_ez25coin_SOURCES += bench/coin_selection.cpp
+endif
+
+bench_bench_ez25coin_LDADD += $(BOOST_LIBS) $(BDB_LIBS) $(SSL_LIBS) $(CRYPTO_LIBS) $(MINIUPNPC_LIBS) $(EVENT_PTHREADS_LIBS) $(EVENT_LIBS)
+bench_bench_ez25coin_LDFLAGS = $(RELDFLAGS) $(AM_LDFLAGS) $(LIBTOOL_APP_LDFLAGS)
+
+CLEAN_EZ25COIN_BENCH = bench/*.gcda bench/*.gcno $(GENERATED_BENCH_FILES)
+
+CLEANFILES += $(CLEAN_EZ25COIN_BENCH)
+
+bench/checkblock.cpp: bench/data/block413567.raw.h
+
+ez25coin_bench: $(BENCH_BINARY)
+
+bench: $(BENCH_BINARY) FORCE
+	$(BENCH_BINARY)
+
+ez25coin_bench_clean : FORCE
+	rm -f $(CLEAN_EZ25COIN_BENCH) $(bench_bench_ez25coin_OBJECTS) $(BENCH_BINARY)
+
+%.raw.h: %.raw
+	@$(MKDIR_P) $(@D)
+	@{ \
+	 echo "static unsigned const char $(*F)[] = {" && \
+	 $(HEXDUMP) -v -e '8/1 "0x%02x, "' -e '"\n"' $< | $(SED) -e 's/0x  ,//g' && \
+	 echo "};"; \
+	} > "$@.new" && mv -f "$@.new" "$@"
+	@echo "Generated $@"

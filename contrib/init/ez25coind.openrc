@@ -1,0 +1,92 @@
+#!/sbin/openrc-run
+
+# backward compatibility for existing gentoo layout 
+#
+if [ -d "/var/lib/ez25coin/.ez25coin" ]; then
+	EZ25COIND_DEFAULT_DATADIR="/var/lib/ez25coin/.ez25coin"
+else
+	EZ25COIND_DEFAULT_DATADIR="/var/lib/ez25coind"
+fi
+
+EZ25COIND_CONFIGFILE=${EZ25COIND_CONFIGFILE:-/etc/ez25coin/ez25coin.conf}
+EZ25COIND_PIDDIR=${EZ25COIND_PIDDIR:-/var/run/ez25coind}
+EZ25COIND_PIDFILE=${EZ25COIND_PIDFILE:-${EZ25COIND_PIDDIR}/ez25coind.pid}
+EZ25COIND_DATADIR=${EZ25COIND_DATADIR:-${EZ25COIND_DEFAULT_DATADIR}}
+EZ25COIND_USER=${EZ25COIND_USER:-${EZ25COIN_USER:-ez25coin}}
+EZ25COIND_GROUP=${EZ25COIND_GROUP:-ez25coin}
+EZ25COIND_BIN=${EZ25COIND_BIN:-/usr/bin/ez25coind}
+EZ25COIND_NICE=${EZ25COIND_NICE:-${NICELEVEL:-0}}
+EZ25COIND_OPTS="${EZ25COIND_OPTS:-${EZ25COIN_OPTS}}"
+
+name="EZ25COIN Core Daemon"
+description="EZ25COIN cryptocurrency P2P network daemon"
+
+command="/usr/bin/ez25coind"
+command_args="-pid=\"${EZ25COIND_PIDFILE}\" \
+		-conf=\"${EZ25COIND_CONFIGFILE}\" \
+		-datadir=\"${EZ25COIND_DATADIR}\" \
+		-daemon \
+		${EZ25COIND_OPTS}"
+
+required_files="${EZ25COIND_CONFIGFILE}"
+start_stop_daemon_args="-u ${EZ25COIND_USER} \
+			-N ${EZ25COIND_NICE} -w 2000"
+pidfile="${EZ25COIND_PIDFILE}"
+
+# The retry schedule to use when stopping the daemon. Could be either
+# a timeout in seconds or multiple signal/timeout pairs (like
+# "SIGKILL/180 SIGTERM/300")
+retry="${EZ25COIND_SIGTERM_TIMEOUT}"
+
+depend() {
+	need localmount net
+}
+
+# verify
+# 1) that the datadir exists and is writable (or create it)
+# 2) that a directory for the pid exists and is writable
+# 3) ownership and permissions on the config file
+start_pre() {
+	checkpath \
+	-d \
+	--mode 0750 \
+	--owner "${EZ25COIND_USER}:${EZ25COIND_GROUP}" \
+	"${EZ25COIND_DATADIR}"
+
+	checkpath \
+	-d \
+	--mode 0755 \
+	--owner "${EZ25COIND_USER}:${EZ25COIND_GROUP}" \
+	"${EZ25COIND_PIDDIR}"
+
+	checkpath -f \
+	-o ${EZ25COIND_USER}:${EZ25COIND_GROUP} \
+	-m 0660 \
+	${EZ25COIND_CONFIGFILE}
+
+	checkconfig || return 1
+}
+
+checkconfig()
+{
+	if ! grep -qs '^rpcpassword=' "${EZ25COIND_CONFIGFILE}" ; then
+		eerror ""
+		eerror "ERROR: You must set a secure rpcpassword to run ez25coind."
+		eerror "The setting must appear in ${EZ25COIND_CONFIGFILE}"
+		eerror ""
+		eerror "This password is security critical to securing wallets "
+		eerror "and must not be the same as the rpcuser setting."
+		eerror "You can generate a suitable random password using the following "
+		eerror "command from the shell:"
+		eerror ""
+		eerror "bash -c 'tr -dc a-zA-Z0-9 < /dev/urandom | head -c32 && echo'"
+		eerror ""
+		eerror "It is recommended that you also set alertnotify so you are "
+		eerror "notified of problems:"
+		eerror ""
+		eerror "ie: alertnotify=echo %%s | mail -s \"EZ25COIN Alert\"" \
+			"admin@foo.com"
+		eerror ""
+		return 1
+	fi
+}
