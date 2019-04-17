@@ -1,0 +1,4 @@
+qt/qt_libez25coinqt_a-qrc_ez25coin.o: qt/qrc_ez25coin.cpp \
+ /usr/include/stdc-predef.h
+
+/usr/include/stdc-predef.h:

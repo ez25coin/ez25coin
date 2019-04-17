@@ -1,0 +1,11 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: EZ25COIN Core consensus library
+Description: Library for the EZ25COIN consensus protocol.
+Version: 1.0.0
+Libs: -L${libdir} -lez25coinconsensus
+Cflags: -I${includedir}
+Requires.private: libcrypto
